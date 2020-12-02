@@ -1,7 +1,6 @@
 package input
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"strconv"
@@ -12,8 +11,7 @@ import (
 func ReadInput(file string) string {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		fmt.Println("File reading error", err)
-		return ""
+		log.Fatal("Failed to convert input to string", err)
 	}
 	return string(data)
 }
@@ -27,8 +25,7 @@ func Slice(input string) []string {
 func Map(input string) map[int]bool {
 	inputSlice := Slice(input)
 
-	var inputMap map[int]bool
-	inputMap = make(map[int]bool)
+	inputMap := make(map[int]bool)
 
 	for _, num := range inputSlice {
 		number, err := strconv.Atoi(num)
