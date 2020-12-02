@@ -18,7 +18,7 @@ func ReadInput(file string) string {
 	return string(data)
 }
 
-// Slice parses the input into slice
+// Slice parses the input into a slice
 func Slice(input string) []string {
 	return strings.Split(input, "\n")
 }
