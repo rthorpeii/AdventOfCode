@@ -9,50 +9,40 @@ import (
 var inputFile string = "day3/input.txt"
 var testFile string = "day3/testInput.txt"
 
-// PartOne finds
-func PartOne() int {
-	rawInput := input.Slice(inputFile)
-	x := 0
+// Slope is
+type Slope struct {
+	x, y int
+}
 
+func traverseSlope(terrain *[]string, slope Slope) int {
 	trees := 0
-	for y := 1; y < len(rawInput); y++ {
-		x += 3
-		if x >= len(rawInput[y]) {
-			x -= len(rawInput[y])
-		}
+	x := 0
+	for y := slope.y; y < len(*terrain); y += slope.y {
+		x += slope.x
+		x = x % len((*terrain)[y])
 
-		if string(rawInput[y][x]) == "#" {
+		if string((*terrain)[y][x]) == "#" {
 			trees++
 		}
 	}
-
 	return trees
+}
+
+// PartOne finds
+func PartOne() int {
+	rawInput := input.Slice(inputFile)
+	return traverseSlope(&rawInput, Slope{3, 1})
 }
 
 // PartTwo finds
 func PartTwo() int {
-	type Pair struct {
-		x, y int
-	}
 
-	slopes := []Pair{Pair{1, 1}, Pair{3, 1}, Pair{5, 1}, Pair{7, 1}, Pair{1, 2}}
+	slopes := []Slope{Slope{1, 1}, Slope{3, 1}, Slope{5, 1}, Slope{7, 1}, Slope{1, 2}}
 	rawInput := input.Slice(inputFile)
 
 	answer := 1
 	for _, slope := range slopes {
-		trees := 0
-		x := 0
-		for y := slope.y; y < len(rawInput); y += slope.y {
-			x += slope.x
-			if x >= len(rawInput[y]) {
-				x -= len(rawInput[y])
-			}
-
-			if string(rawInput[y][x]) == "#" {
-				trees++
-			}
-		}
-		answer *= trees
+		answer *= traverseSlope(&rawInput, slope)
 	}
 
 	return answer
