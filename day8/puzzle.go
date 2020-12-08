@@ -24,29 +24,8 @@ func SolvePuzzle() {
 // PartOne finds
 func PartOne(file string) int {
 	rawInput := input.Slice(file)
-	visited := make(map[int]bool)
-	pos := 0
-	acc := 0
-	for pos < len(rawInput) {
-		if visited[pos] {
-			return acc
-		}
-		visited[pos] = true
-		instr := rawInput[pos]
-		parts := strings.Split(instr, " ")
-		value, _ := strconv.Atoi(parts[1])
-		switch parts[0] {
-		case "nop":
-			pos++
-		case "acc":
-			acc += value
-			pos++
-		case "jmp":
-			pos += value
-		}
-	}
-
-	return -1
+	_, value := runProg(rawInput)
+	return value
 }
 
 // PartTwo finds
@@ -54,43 +33,35 @@ func PartTwo(file string) int {
 	rawInput := input.Slice(file)
 	for index, line := range rawInput {
 		parts := strings.Split(line, " ")
-
+		if parts[0] == "acc" {
+			continue
+		}
+		newProg := make([]string, len(rawInput))
+		copy(newProg, rawInput)
 		if parts[0] == "jmp" {
-			newProg := make([]string, len(rawInput))
-			copy(newProg, rawInput)
 			newProg[index] = "nop " + parts[1]
-			visited := make(map[int]bool)
-			pos := 0
-			acc := 0
-			value := runProg(newProg, pos, acc, &visited)
-			if value != -1 {
-				return value
-			}
 		} else if parts[0] == "nop" {
-			newProg := make([]string, len(rawInput))
-			copy(newProg, rawInput)
 			newProg[index] = "jmp " + parts[1]
-			visited := make(map[int]bool)
-			pos := 0
-			acc := 0
-			value := runProg(newProg, pos, acc, &visited)
-			if value != -1 {
-				return value
-			}
+		}
+
+		valid, value := runProg(newProg)
+		if valid {
+			return value
 		}
 	}
-	return -1
 
+	return -1
 }
 
-func runProg(prog []string, pos int, acc int, visited *map[int]bool) int {
+func runProg(prog []string) (bool, int) {
+	pos, acc, visited := 0, 0, make(map[int]bool)
 	for pos < len(prog) {
-		if (*visited)[pos] {
-			return -1
+		if visited[pos] {
+			return false, acc
 		}
-		(*visited)[pos] = true
-		instr := prog[pos]
-		parts := strings.Split(instr, " ")
+		visited[pos] = true
+
+		parts := strings.Split(prog[pos], " ")
 		value, _ := strconv.Atoi(parts[1])
 		switch parts[0] {
 		case "nop":
@@ -102,5 +73,5 @@ func runProg(prog []string, pos int, acc int, visited *map[int]bool) int {
 			pos += value
 		}
 	}
-	return acc
+	return true, acc
 }
