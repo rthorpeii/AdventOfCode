@@ -5,135 +5,118 @@ package day4
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
-	"../input"
+	"github.com/rthorpeii/AdventOfCode2020/input"
 )
 
 var inputFile string = "day4/input.txt"
 var testFile string = "day4/testInput.txt"
 
-/*
-
-   byr (Birth Year)
-   iyr (Issue Year)
-   eyr (Expiration Year)
-   hgt (Height)
-   hcl (Hair Color)
-   ecl (Eye Color)
-   pid (Passport ID)
-   cid (Country ID)
-
-*/
-
-// type Passport struct {
-// 	byr int
-// 	iyr int
-// 	eyr int
-// 	hgt int
-// 	hcl string
-// 	ecl string
-// 	pid int
-// 	cid int
-// }
-
-var fields = []string{"byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid", "cid"}
-var eyes = map[string](bool){"amb": true, "blu": true, "brn": true, "gry": true, "grn": true, "hzl": true, "oth": true}
-
-func validatePassport(passport map[string](string)) bool {
-	for _, field := range fields {
-		value := passport[field]
-		if value == "" && field != "cid" {
-			return false
-		}
-		if field == "byr" {
-			val, err := strconv.ParseFloat(value, 32)
-			if err != nil || len(value) != 4 || val < 1920 || val > 2002 {
-				return false
-			}
-		} else if field == "iyr" {
-			val, err := strconv.ParseFloat(value, 32)
-			if err != nil || len(value) != 4 || val < 2010 || val > 2020 {
-				return false
-			}
-		} else if field == "eyr" {
-			val, err := strconv.ParseFloat(value, 32)
-			if err != nil || len(value) != 4 || val < 2020 || val > 2030 {
-				return false
-			}
-		} else if field == "hgt" {
-			if string(value[len(value)-2:len(value)]) == "cm" {
-				val, err := strconv.ParseFloat(value[0:3], 32)
-				if err != nil {
-					return false
-				}
-				if len(value) != 5 || val < 150 || val > 193 {
-					return false
-				}
-			} else if string(value[len(value)-2:len(value)]) == "in" {
-				val, err := strconv.ParseFloat(value[0:2], 32)
-				if err != nil {
-					return false
-				}
-				if len(value) != 4 || val < 59 || val > 76 {
-					return false
-				}
-			} else {
-				return false
-			}
-		} else if field == "hcl" {
-			matched, _ := regexp.MatchString(`#[0-9a-f]{6}$`, value)
-			if !matched {
-				return false
-			}
-		} else if field == "ecl" {
-			if eyes[value] == false {
-				return false
-			}
-		} else if field == "pid" {
-			matched, _ := regexp.MatchString(`[0-9]{9}$`, value)
-			if !matched {
-				return false
-			}
-		}
-	}
-	if (len(passport) < 7) || (len(passport) == 7 && passport["cid"] != "") || len(passport) > 8 {
-		return false
-	}
-	return true
+// SolvePuzzle prints the output produced by running the input and test files on both parts
+func SolvePuzzle() {
+	fmt.Printf("Part 1 - Test: %v \n", PartOne(testFile))
+	fmt.Printf("Part 1 - Actual: %v \n", PartOne(inputFile))
+	fmt.Printf("Part 2 - Test: %v \n", PartTwo(testFile))
+	fmt.Printf("Part 2 - Actual: %v \n", PartTwo(inputFile))
 }
 
-// PartOne finds
-func PartOne() int {
-	rawInput := input.Slice(inputFile)
+// parsePassport parses an input file of passports into a slice of passports
+// where each passport is a map from the passport field to its value
+func parsePassports(file string) []map[string]string {
+	input := input.ReadInput(file)
+	splitInput := strings.Split(input, "\n\n")
 
-	valid := 0
-
-	passport := make(map[string](string))
-	for _, val := range rawInput {
-		if val == "" {
-			if validatePassport(passport) {
-				valid++
-			}
-			passport = make(map[string](string))
-			fmt.Println(passport)
-			continue
-		}
-
-		fields := strings.Fields(val)
-		for _, part := range fields {
-			split := strings.Split(part, ":")
+	passports := make([]map[string]string, len(splitInput))
+	for _, val := range splitInput {
+		passport := make(map[string](string))
+		for _, pair := range strings.Fields(val) {
+			split := strings.Split(pair, ":")
 			passport[split[0]] = split[1]
+		}
+		passports = append(passports, passport)
+	}
+	return passports
+}
+
+// PartOne finds how many passports have all required fields ('cid' is optional)
+func PartOne(file string) int {
+	passports := parsePassports(file)
+	valid := 0
+	for _, passport := range passports {
+		if len(passport) == 8 || (len(passport) == 7 && passport["cid"] == "") {
+			valid++
 		}
 	}
 
 	return valid
 }
 
-// PartTwo finds
-func PartTwo() int {
-	// rawInput := input.ReadInput(testFile)
+// PartTwo finds how many passports are valid based on the requirements for each field
+func PartTwo(file string) int {
+	passports := parsePassports(file)
+	valid := 0
+	for _, passport := range passports {
+		if validatePassport(passport) {
+			valid++
+		}
+	}
+	return valid
+}
 
-	return -1
+var fields = []string{"byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid", "cid"}
+
+// validatePassport confirms that the passport has all fields needed for a passport (defined
+// in the fields global, with 'cid' being optional), and that these fields contain valid
+// values as defined by the problem spec
+func validatePassport(passport map[string](string)) bool {
+	for _, field := range fields {
+		value := passport[field]
+		if value == "" && field != "cid" {
+			return false
+		}
+		switch field {
+		case "byr": // byr (Birth Year) - four digits; at least 1920 and at most 2002.
+			matched, _ := regexp.MatchString(`^(19[2-9][0-9]|200[0-2])$`, value)
+			if !matched {
+				return false
+			}
+		case "iyr": // iyr (Issue Year) - four digits; at least 2010 and at most 2020.
+			matched, _ := regexp.MatchString(`^(201[0-9]|2020)$`, value)
+			if !matched {
+				return false
+			}
+		case "eyr": // eyr (Expiration Year) - four digits; at least 2020 and at most 2030.
+			matched, _ := regexp.MatchString(`^(202[0-9]|2030)$`, value)
+			if !matched {
+				return false
+			}
+
+		case "hgt":
+			// hgt (Height) - a number followed by either cm or in:
+			// If cm, the number must be at least 150 and at most 193.
+			// If in, the number must be at least 59 and at most 76.
+			matchedCm, _ := regexp.MatchString(`^(1[5-8][0-9]|19[0-3])cm$`, value)
+			matchedIn, _ := regexp.MatchString(`^(59|6[0-9]|7[0-6])in$`, value)
+			if !matchedCm && !matchedIn {
+				return false
+			}
+		case "hcl": // hcl (Hair Color) - a # followed by exactly six characters 0-9 or a-f.
+			matched, _ := regexp.MatchString(`^#[0-9a-f]{6}$`, value)
+			if !matched {
+				return false
+			}
+		case "ecl": // ecl (Eye Color) - exactly one of: amb blu brn gry grn hzl oth.
+			matched, _ := regexp.MatchString(`^amb|blu|brn|gry|grn|hzl|oth$`, value)
+			if !matched {
+				return false
+			}
+		case "pid": // pid (Passport ID) - a nine-digit number, including leading zeroes.
+			matched, _ := regexp.MatchString(`^[0-9]{9}$`, value)
+			if !matched {
+				return false
+			}
+		}
+	}
+	return true
 }
