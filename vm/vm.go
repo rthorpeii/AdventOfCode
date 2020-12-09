@@ -10,7 +10,7 @@ import (
 	"github.com/rthorpeii/AdventOfCode2020/input"
 )
 
-// VM is an object representing the virtual machine
+// VM is an object representing the virtual machine and its execution state
 type VM struct {
 	Instructions []string
 	Addr         int
@@ -48,13 +48,13 @@ func (vm *VM) Execute() (valid bool) {
 		parts := strings.Split(vm.Instructions[vm.Addr], " ")
 		value, _ := strconv.Atoi(parts[1])
 		switch parts[0] {
-		case "nop":
-			vm.Addr++
-		case "acc":
+		case "acc": // Increases or decreases the accumulator
 			vm.Acc += value
 			vm.Addr++
-		case "jmp":
+		case "jmp": // Jumps to a new instruction relative to itself
 			vm.Addr += value
+		case "nop": // Does nothing
+			vm.Addr++
 		}
 	}
 	return true
