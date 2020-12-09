@@ -4,10 +4,9 @@ package day8
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
-	"github.com/rthorpeii/AdventOfCode2020/input"
+	"github.com/rthorpeii/AdventOfCode2020/vm"
 )
 
 var inputFile string = "day8/input.txt"
@@ -23,55 +22,31 @@ func SolvePuzzle() {
 
 // PartOne finds
 func PartOne(file string) int {
-	rawInput := input.Slice(file)
-	_, value := runProg(rawInput)
-	return value
+	vm := vm.NewVM(file)
+	vm.Execute()
+	return vm.Acc
 }
 
 // PartTwo finds
 func PartTwo(file string) int {
-	rawInput := input.Slice(file)
-	for index, line := range rawInput {
+	vm := vm.NewVM(file)
+	for index, line := range vm.Instructions {
 		parts := strings.Split(line, " ")
 		if parts[0] == "acc" {
 			continue
 		}
-		newProg := make([]string, len(rawInput))
-		copy(newProg, rawInput)
+		copyVM := vm.Copy()
 		if parts[0] == "jmp" {
-			newProg[index] = "nop " + parts[1]
+			copyVM.Instructions[index] = "nop " + parts[1]
 		} else if parts[0] == "nop" {
-			newProg[index] = "jmp " + parts[1]
+			copyVM.Instructions[index] = "jmp " + parts[1]
 		}
 
-		valid, value := runProg(newProg)
+		valid := copyVM.Execute()
 		if valid {
-			return value
+			return copyVM.Acc
 		}
 	}
 
 	return -1
-}
-
-func runProg(prog []string) (bool, int) {
-	pos, acc, visited := 0, 0, make(map[int]bool)
-	for pos < len(prog) {
-		if visited[pos] {
-			return false, acc
-		}
-		visited[pos] = true
-
-		parts := strings.Split(prog[pos], " ")
-		value, _ := strconv.Atoi(parts[1])
-		switch parts[0] {
-		case "nop":
-			pos++
-		case "acc":
-			acc += value
-			pos++
-		case "jmp":
-			pos += value
-		}
-	}
-	return true, acc
 }
