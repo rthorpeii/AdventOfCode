@@ -21,6 +21,23 @@ func Slice(file string) []string {
 	return strings.Split(ReadInput(file), "\n")
 }
 
+// IntSlice turns the input into a map
+func IntSlice(input string) []int {
+	inputSlice := Slice(input)
+
+	output := make([]int, len(inputSlice))
+
+	for pos, num := range inputSlice {
+		number, err := strconv.Atoi(num)
+		if err != nil {
+			log.Fatal("Failed to convert input to map", err)
+		}
+		output[pos] = number
+	}
+
+	return output
+}
+
 // Map turns the input into a map
 func Map(input string) map[int]bool {
 	inputSlice := Slice(input)
