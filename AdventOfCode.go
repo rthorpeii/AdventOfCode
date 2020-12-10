@@ -1,7 +1,7 @@
 package main
 
-import "github.com/rthorpeii/AdventOfCode2020/day5"
+import "github.com/rthorpeii/AdventOfCode2020/day9"
 
 func main() {
-	day5.SolvePuzzle()
+	day9.SolvePuzzle()
 }

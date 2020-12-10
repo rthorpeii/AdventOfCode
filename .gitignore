@@ -16,3 +16,6 @@
 
 # VSCode specific stuff
 .vscode/
+
+# Ignore the built binary
+AdventOfCode2020
