@@ -19,14 +19,17 @@ func SolvePuzzle() {
 	fmt.Printf("Part 2 - Actual: %v \n", PartTwo(inputFile))
 }
 
-// PartOne finds
-func PartOne(file string) int {
-	rawInput := input.IntSlice(file)
-	preamble := 25
+// What size should the preamble f
+var preamble = 25
 
-	return findTarget(rawInput, preamble)
+// PartOne finds what number in the input is not the sum of two of the previous 25 numbers
+func PartOne(file string) int {
+	input := input.IntSlice(file)
+	return findTarget(input, 25)
 }
 
+// Finds what number in the input is not the sum of the previous x numbers
+// where x is preamble
 func findTarget(input []int, preamble int) int {
 	for i := preamble; i < len(input); i++ {
 		if !valid(input[i-preamble:i], input[i]) {
@@ -36,10 +39,11 @@ func findTarget(input []int, preamble int) int {
 	return -1
 }
 
+// valid determines if the target can be created by adding two numbers within the input
 func valid(input []int, target int) bool {
-	for index, val := range input {
-		for j := index + 1; j < len(input); j++ {
-			if val+input[j] == target {
+	for first, val := range input {
+		for second := first + 1; second < len(input); second++ {
+			if val+input[second] == target {
 				return true
 			}
 		}
@@ -48,7 +52,8 @@ func valid(input []int, target int) bool {
 	return false
 }
 
-// PartTwo finds
+// PartTwo finds what consecutive sequence of at least 2 numbers in the input sum to the
+// target number which is the number in the input that is not the sum of two of the previous 25 numbers
 func PartTwo(file string) int {
 	rawInput := input.IntSlice(file)
 	preamble := 25
@@ -75,8 +80,8 @@ func PartTwo(file string) int {
 	}
 
 	smallest, largest := rawInput[max], rawInput[max]
-	for i := min; i < max; i++ {
-		val := rawInput[i]
+	for index := min; index < max; index++ {
+		val := rawInput[index]
 		if val < smallest {
 			smallest = val
 		} else if val > largest {
