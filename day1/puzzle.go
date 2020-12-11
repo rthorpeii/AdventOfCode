@@ -15,7 +15,7 @@ var testFile string = "day1/testInput.txt"
 // in constant time O(n)
 func PartOne() int {
 	rawInput := input.ReadInput(inputFile)
-	expenses := input.Map(rawInput)
+	expenses := input.IntMap(rawInput)
 
 	for expense := range expenses {
 		// The number needed to sum to 2020 with expense
@@ -34,7 +34,7 @@ func PartOne() int {
 // the value needed to sum with it to 2020 exists. Runs in O(n^2) time
 func PartTwo() int {
 	raw := input.ReadInput(inputFile)
-	expenses := input.Map(raw)
+	expenses := input.IntMap(raw)
 
 	// creates a list of the keys in the expenses to iterate through
 	keys := make([]int, 0, len(expenses))

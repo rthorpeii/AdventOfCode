@@ -38,8 +38,8 @@ func IntSlice(input string) []int {
 	return output
 }
 
-// Map turns the input into a map
-func Map(input string) map[int]bool {
+// IntMap turns the input into a map
+func IntMap(input string) map[int]bool {
 	inputSlice := Slice(input)
 
 	inputMap := make(map[int]bool)
