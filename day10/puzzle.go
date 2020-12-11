@@ -20,13 +20,14 @@ func SolvePuzzle() {
 	fmt.Printf("Part 2 - Actual: %v \n", PartTwo(inputFile))
 }
 
-// PartOne finds
+// PartOne finds the number of 1-jolt differences multiplied by the number of 3-jolt differences
 func PartOne(file string) int {
-	input := input.IntSlice(file)
+	// Parse the input, sort it, and add the outlet, and phone values
+	input := append(input.IntSlice(file), 0)
 	sort.Ints(input)
+	input = append(input, input[len(input)-1]+3)
 
-	countOne := 0
-	countThree := 0
+	countOne, countThree := 0, 0
 	if input[0] == 1 {
 		countOne++
 	} else if input[0] == 3 {
@@ -39,52 +40,54 @@ func PartOne(file string) int {
 			countThree++
 		}
 	}
-	fmt.Printf("One: %v\n Three: %v\n", countOne, countThree)
-	return countOne * (countThree + 1)
+	return countOne * countThree
 }
 
-// PartTwo finds
+// PartTwo finds the total number of distinct ways you can
+// arrange the adapters to connect the charging outlet to your device
 func PartTwo(file string) int {
-	input := input.IntSlice(file)
-	input = append(input, 0)
+	input := append(input.IntSlice(file), 0)
 	sort.Ints(input)
 	input = append(input, input[len(input)-1]+3)
 
 	return countValid(input)
 }
 
-type valid struct {
+// Represents how many orderings there were with a particular variable, and without it
+type orderingCount struct {
 	with    int
 	without int
 }
 
-// 0,  1, 4, 5, 6, 7, 10, 11, 12, 15, 16, 19,  22
+// countValid determines the number of distinct ways you can
+// arrange the input adapters to connect the charging outlet to your device
 func countValid(input []int) int {
-	validMap := make(map[int]valid, len(input))
-	count := 0
-	validMap[0] = valid{1, 0}
+	doublePrevCount := orderingCount{1, 0} // How many orderings there were two numbers in the past
+	prevCount := orderingCount{}           // How many orderings there were one number ago
+
+	// Resolve the base cases
 	if input[2]-input[1] <= 3 {
-		validMap[1] = valid{1, 1}
+		prevCount = orderingCount{1, 1}
 	} else {
-		validMap[1] = valid{1, 0}
+		prevCount = orderingCount{1, 0}
 	}
+
 	for i := 2; i < len(input)-1; i++ {
-		value := input[i]
-		prev := input[i-1]
-		doublePrev := input[i-2]
-		current := valid{}
-		current.with = validMap[prev].with + validMap[prev].without
-		if input[i+1]-prev <= 3 {
-			current.without += validMap[prev].with
+		prevAdapter := input[i-1]
+		doublePrevAdapter := input[i-2]
+		currentAdapter := orderingCount{}
+		// The number of valid iterations so far with the current adapter included is equal to
+		// the sum of the number of iterations with and without the previous number in the sequence
+		currentAdapter.with = prevCount.with + prevCount.without
+		if input[i+1]-prevAdapter <= 3 { // If we can remove the current number
+			currentAdapter.without += prevCount.with
 		}
-		if input[i+1]-doublePrev <= 3 {
-			current.without += validMap[prev].without - validMap[doublePrev].without
+		if input[i+1]-doublePrevAdapter <= 3 { // If we can remove the current number and the previous number
+			currentAdapter.without += prevCount.without - doublePrevCount.without
 		}
-		validMap[value] = current
+		doublePrevCount = prevCount
+		prevCount = currentAdapter
 	}
 
-	fmt.Println(validMap)
-
-	return count
-
+	return prevCount.with
 }
