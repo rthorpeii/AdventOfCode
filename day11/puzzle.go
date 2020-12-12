@@ -14,7 +14,6 @@ var testFile string = "day11/testInput.txt"
 
 // SolvePuzzle prints the output produced by running the input and test files on both parts
 func SolvePuzzle() {
-	sdf
 	fmt.Printf("Part 1 - Test: %v \n", PartOne(testFile))
 	fmt.Printf("Part 1 - Actual: %v \n", PartOne(puzzleInputFile))
 	fmt.Printf("Part 2 - Test: %v \n", PartTwo(testFile))
