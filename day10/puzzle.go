@@ -27,20 +27,11 @@ func PartOne(file string) int {
 	sort.Ints(input)
 	input = append(input, input[len(input)-1]+3)
 
-	countOne, countThree := 0, 0
-	if input[0] == 1 {
-		countOne++
-	} else if input[0] == 3 {
-		countThree++
-	}
+	count := make([]int, 4)
 	for i := 1; i < len(input); i++ {
-		if input[i]-input[i-1] == 1 {
-			countOne++
-		} else if input[i]-input[i-1] == 3 {
-			countThree++
-		}
+		count[input[i]-input[i-1]]++
 	}
-	return countOne * countThree
+	return count[1] * count[3]
 }
 
 // PartTwo finds the total number of distinct ways you can
@@ -62,8 +53,8 @@ type orderingCount struct {
 // countValid determines the number of distinct ways you can
 // arrange the input adapters to connect the charging outlet to your device
 func countValid(input []int) int {
-	doublePrevCount := orderingCount{1, 0} // How many orderings there were two numbers in the past
-	prevCount := orderingCount{}           // How many orderings there were one number ago
+	doublePrevCount := orderingCount{1, 0} // How many orderings there were two numbers in the past. Starts with input[0]
+	prevCount := orderingCount{}           // How many orderings there were one number in the past. Starts with input[1]
 
 	// Resolve the base cases
 	if input[2]-input[1] <= 3 {
@@ -73,16 +64,14 @@ func countValid(input []int) int {
 	}
 
 	for i := 2; i < len(input)-1; i++ {
-		prevAdapter := input[i-1]
-		doublePrevAdapter := input[i-2]
 		currentAdapter := orderingCount{}
 		// The number of valid iterations so far with the current adapter included is equal to
 		// the sum of the number of iterations with and without the previous number in the sequence
 		currentAdapter.with = prevCount.with + prevCount.without
-		if input[i+1]-prevAdapter <= 3 { // If we can remove the current number
+		if input[i+1]-input[i-1] <= 3 { // If we can remove the current number
 			currentAdapter.without += prevCount.with
 		}
-		if input[i+1]-doublePrevAdapter <= 3 { // If we can remove the current number and the previous number
+		if input[i+1]-input[i-2] <= 3 { // If we can remove the current number and the previous number
 			currentAdapter.without += prevCount.without - doublePrevCount.without
 		}
 		doublePrevCount = prevCount
