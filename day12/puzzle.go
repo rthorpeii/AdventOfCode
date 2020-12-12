@@ -20,51 +20,51 @@ func SolvePuzzle() {
 	fmt.Printf("Part 2 - Actual: %v \n", PartTwo(puzzleInputFile))
 }
 
-type coord struct {
-	facing int
-	x      int
-	y      int
+// coords represents the position and facing of an object
+type coords struct {
+	facing int // How many degrees the object is rotated clockwise, 0 being north
+	x      int // Position on the horizontal (East/West) axis
+	y      int // Position on the vertical (North/South axis)
 }
 
-// PartOne finds
+// PartOne finds the manhattan distance of the ship after following the instructions passed in
 func PartOne(file string) int {
 	input := input.Slice(file)
-	coords := coord{90, 0, 0}
+	ship := coords{90, 0, 0}
 	for _, instr := range input {
 		value, _ := strconv.Atoi(instr[1:])
 		switch string(instr[0]) {
 		case "N":
-			coords.y += value
+			ship.y += value
 		case "S":
-			coords.y -= value
+			ship.y -= value
 		case "E":
-			coords.x += value
+			ship.x += value
 		case "W":
-			coords.x -= value
+			ship.x -= value
 		case "L":
-			coords.facing -= value
-			coords.facing %= 360
+			ship.facing -= value
 		case "R":
-			coords.facing += value
-			coords.facing %= 360
+			ship.facing += value
 		case "F":
-			for coords.facing < 0 {
-				coords.facing += 360
+			ship.facing %= 360
+			if ship.facing < 0 {
+				ship.facing += 360
 			}
-			switch coords.facing {
+			switch ship.facing {
 			case 0:
-				coords.y += value
+				ship.y += value
 			case 90:
-				coords.x += value
+				ship.x += value
 			case 180:
-				coords.y -= value
+				ship.y -= value
 			case 270:
-				coords.x -= value
+				ship.x -= value
 			}
 		}
 	}
 
-	return Abs(coords.x) + Abs(coords.y)
+	return Abs(ship.x) + Abs(ship.y)
 }
 
 // Abs returns the absolute value of x.
@@ -75,43 +75,43 @@ func Abs(x int) int {
 	return x
 }
 
-// PartTwo finds
+// PartTwo finds the manhattan distance of the ship after following the instructions passed in
+// This time however, most instructions now move a waypoint which the ship will advance towards
 func PartTwo(file string) int {
 	input := input.Slice(file)
-	shipCoords := coord{90, 0, 0}
-	waypointCoords := coord{0, 10, 1}
+	ship := coords{}
+	waypoint := coords{0, 10, 1}
 	for _, instr := range input {
 		value, _ := strconv.Atoi(instr[1:])
 		switch string(instr[0]) {
 		case "N":
-			waypointCoords.y += value
+			waypoint.y += value
 		case "S":
-			waypointCoords.y -= value
+			waypoint.y -= value
 		case "E":
-			waypointCoords.x += value
+			waypoint.x += value
 		case "W":
-			waypointCoords.x -= value
+			waypoint.x -= value
 		case "L":
-			rotateWaypoint(&waypointCoords, 360-value)
+			rotateWaypoint(&waypoint, 360-value)
 		case "R":
-			rotateWaypoint(&waypointCoords, value)
+			rotateWaypoint(&waypoint, value)
 		case "F":
 			for i := 0; i < value; i++ {
-				shipCoords.x += waypointCoords.x
-				shipCoords.y += waypointCoords.y
+				ship.x += waypoint.x
+				ship.y += waypoint.y
 			}
 		}
 	}
 
-	return Abs(shipCoords.x) + Abs(shipCoords.y)
+	return Abs(ship.x) + Abs(ship.y)
 }
 
-// Rotates the ship clockwise
-func rotateWaypoint(coords *coord, degree int) {
+// Rotates the waypoint clockwise around the ship by a number of degrees
+// Assumes degrees is a multiple of 90
+func rotateWaypoint(waypoint *coords, degree int) {
 	for degree > 0 {
-		newY := -coords.x
-		coords.x = coords.y
-		coords.y = newY
+		waypoint.x, waypoint.y = waypoint.y, -waypoint.x
 		degree -= 90
 	}
 }
