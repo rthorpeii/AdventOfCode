@@ -19,34 +19,29 @@ func SolvePuzzle() {
 	fmt.Printf("Part 2 - Actual: %v \n", PartTwo(puzzleInputFile))
 }
 
+type coords struct {
+	x, y int
+}
+
 // PartOne finds
 func PartOne(file string) int {
 	input := input.Slice(file)
-	for i := range input {
-		input[i] = "." + input[i] + "."
-	}
-	floorString := ""
-	for i := 0; i < len(input[0]); i++ {
-		floorString += "."
-	}
-	floorSlice := make([]string, 0)
-	floorSlice = append(floorSlice, floorString)
-	input = append(floorSlice, input...)
-	input = append(input, floorString)
+
 	changed := true
-	nextEmpty := 0
+	empytSeats := 0
 	for changed {
-		nextEmpty = 0
+		empytSeats = 0
 		changed = false
 		nextInput := make([]string, len(input))
 		for y := 0; y < len(input); y++ {
-
 			for x := 0; x < len(input[y]); x++ {
-				switch string(input[y][x]) {
+				pos := coords{x, y}
+				value := string(input[y][x])
+				switch value {
 				case "L":
-					nextInput[y] += emptyChange(input, x, y)
+					nextInput[y] += emptyChange(&input, pos)
 				case "#":
-					nextInput[y] += occupiedChange(input, x, y)
+					nextInput[y] += occupiedChange(&input, pos)
 				case ".":
 					nextInput[y] += "."
 				}
@@ -54,21 +49,30 @@ func PartOne(file string) int {
 					changed = true
 				}
 				if string(nextInput[y][x]) == "#" {
-					nextEmpty++
+					empytSeats++
 				}
 			}
 		}
 		input = nextInput
 	}
-	return nextEmpty
+	return empytSeats
 }
-func emptyChange(seats []string, x1 int, y1 int) string {
-	for y := y1 - 1; y <= y1+1; y++ {
-		for x := x1 - 1; x <= x1+1; x++ {
-			if y1 == y && x1 == x {
+
+func validateCoords(seats *[]string, pos coords) bool {
+	if pos.y >= len((*seats)) || pos.y < 0 {
+		return false
+	}
+	return (pos.x > -1 && pos.x < len((*seats)[pos.y]))
+}
+
+func emptyChange(seats *[]string, pos coords) string {
+	for y := -1; y <= 1; y++ {
+		for x := -1; x <= +1; x++ {
+			target := coords{pos.x + x, pos.y + y}
+			if !validateCoords(seats, target) || (target == pos) {
 				continue
 			}
-			if string(seats[y][x]) == "#" {
+			if string((*seats)[target.y][target.x]) == "#" {
 				return "L"
 			}
 		}
@@ -76,14 +80,15 @@ func emptyChange(seats []string, x1 int, y1 int) string {
 	return "#"
 }
 
-func occupiedChange(seats []string, x1 int, y1 int) string {
+func occupiedChange(seats *[]string, pos coords) string {
 	occupied := 0
-	for y := y1 - 1; y <= y1+1; y++ {
-		for x := x1 - 1; x <= x1+1; x++ {
-			if y1 == y && x1 == x {
+	for y := -1; y <= 1; y++ {
+		for x := -1; x <= +1; x++ {
+			target := coords{pos.x + x, pos.y + y}
+			if !validateCoords(seats, target) || (target == pos) {
 				continue
 			}
-			if string(seats[y][x]) == "#" {
+			if string((*seats)[target.y][target.x]) == "#" {
 				occupied++
 			}
 		}
@@ -97,17 +102,7 @@ func occupiedChange(seats []string, x1 int, y1 int) string {
 // PartTwo finds
 func PartTwo(file string) int {
 	input := input.Slice(file)
-	for i := range input {
-		input[i] = "." + input[i] + "."
-	}
-	floorString := ""
-	for i := 0; i < len(input[0]); i++ {
-		floorString += "."
-	}
-	floorSlice := make([]string, 0)
-	floorSlice = append(floorSlice, floorString)
-	input = append(floorSlice, input...)
-	input = append(input, floorString)
+
 	changed := true
 	nextEmpty := 0
 	for changed {
@@ -115,13 +110,14 @@ func PartTwo(file string) int {
 		changed = false
 		nextInput := make([]string, len(input))
 		for y := 0; y < len(input); y++ {
-
 			for x := 0; x < len(input[y]); x++ {
-				switch string(input[y][x]) {
+				pos := coords{x, y}
+				value := string(input[y][x])
+				switch value {
 				case "L":
-					nextInput[y] += emptySightChange(input, x, y)
+					nextInput[y] += emptySightChange(&input, pos)
 				case "#":
-					nextInput[y] += occupiedSightChange(input, x, y)
+					nextInput[y] += occupiedSightChange(&input, pos)
 				case ".":
 					nextInput[y] += "."
 				}
@@ -138,166 +134,52 @@ func PartTwo(file string) int {
 	return nextEmpty
 }
 
-func emptySightChange(seats []string, x1 int, y1 int) string {
-	for delta := 1; delta <= y1; delta++ {
-		y := y1 - delta
-		if string(seats[y][x1]) == "#" { // straight up
-			return "L"
-		} else if string(seats[y][x1]) == "L" {
-			break
-		}
-	}
-	for delta := 1; delta <= y1; delta++ {
-		if x1-delta > -1 {
-			y := y1 - delta
-			if string(seats[y][x1-delta]) == "#" { // diagonal up left
-				return "L"
-			} else if string(seats[y][x1-delta]) == "L" {
-				break
+func emptySightChange(seats *[]string, pos coords) string {
+	for y := -1; y <= 1; y++ {
+		for x := -1; x <= +1; x++ {
+			target := coords{pos.x, pos.y}
+		LineOfSight:
+			for true {
+				target.x += x
+				target.y += y
+				if !validateCoords(seats, target) || (target == pos) {
+					break
+				}
+				switch string((*seats)[target.y][target.x]) {
+				case "#":
+					return "L"
+				case "L":
+					break LineOfSight
+				}
 			}
-		}
-	}
-	for delta := 1; delta <= y1; delta++ {
-		y := y1 - delta
-		if x1+delta < len(seats[y]) {
-			y := y1 - delta
-			if string(seats[y][x1+delta]) == "#" { // diagonal up right
-				return "L"
-			} else if string(seats[y][x1+delta]) == "L" {
-				break
-			}
-		}
-	}
-	for delta := -1; delta > y1-len(seats); delta-- {
-		y := y1 - delta
-		if string(seats[y][x1]) == "#" { // straight down
-			return "L"
-		} else if string(seats[y][x1]) == "L" {
-			break
-		}
-	}
-	for delta := -1; delta > y1-len(seats); delta-- {
-		y := y1 - delta
-		if x1-delta < len(seats[y]) {
-			if string(seats[y][x1-delta]) == "#" { // diagonal right
-				return "L"
-			} else if string(seats[y][x1-delta]) == "L" {
-				break
-			}
-		}
-	}
-	for delta := -1; delta > y1-len(seats); delta-- {
-		y := y1 - delta
-		if x1+delta > -1 {
-			if string(seats[y][x1+delta]) == "#" { // diagonal left
-				return "L"
-			} else if string(seats[y][x1+delta]) == "L" {
-				break
-			}
-		}
-	}
-	for delta := 1; delta < len(seats[0])-x1; delta++ {
-		x := x1 + delta
-		if string(seats[y1][x]) == "#" { // straight right
-			return "L"
-		} else if string(seats[y1][x]) == "L" {
-			break
-		}
-	}
-	for delta := 1; delta <= x1; delta++ {
-		x := x1 - delta
-		if string(seats[y1][x]) == "#" { // straight left
-			return "L"
-		} else if string(seats[y1][x]) == "L" {
-			break
+
 		}
 	}
 	return "#"
 }
 
-func occupiedSightChange(seats []string, x1 int, y1 int) string {
+func occupiedSightChange(seats *[]string, pos coords) string {
 	occupied := 0
-	for delta := 1; delta <= y1; delta++ {
-		y := y1 - delta
-		if string(seats[y][x1]) == "#" { // straight up
-			occupied++
-			break
-		} else if string(seats[y][x1]) == "L" {
-			break
-		}
-	}
-	for delta := 1; delta <= y1; delta++ {
-		y := y1 - delta
-		if x1-delta > -1 {
-			if string(seats[y][x1-delta]) == "#" { // diagonal up left
-				occupied++
-				break
-			} else if string(seats[y][x1-delta]) == "L" {
-				break
+	for y := -1; y <= 1; y++ {
+		for x := -1; x <= +1; x++ {
+			target := coords{pos.x, pos.y}
+		LineOfSight:
+			for true {
+				target.x += x
+				target.y += y
+				if !validateCoords(seats, target) || (target == pos) {
+					break
+				}
+				switch string((*seats)[target.y][target.x]) {
+				case "#":
+					occupied++
+					break LineOfSight
+				case "L":
+					break LineOfSight
+				}
 			}
 		}
 	}
-	for delta := 1; delta <= y1; delta++ {
-		y := y1 - delta
-		if x1+delta < len(seats[y]) {
-			if string(seats[y][x1+delta]) == "#" { // diagonal up right
-				occupied++
-				break
-			} else if string(seats[y][x1+delta]) == "L" {
-				break
-			}
-		}
-	}
-	for delta := -1; delta > y1-len(seats); delta-- {
-		y := y1 - delta
-		if string(seats[y][x1]) == "#" { // straight down
-			occupied++
-			break
-		} else if string(seats[y][x1]) == "L" {
-			break
-		}
-	}
-	for delta := -1; delta > y1-len(seats); delta-- {
-		y := y1 - delta
-		if x1-delta < len(seats[y]) {
-			if string(seats[y][x1-delta]) == "#" { // diagonal right
-				occupied++
-				break
-			} else if string(seats[y][x1-delta]) == "L" {
-				break
-			}
-		}
-	}
-	for delta := -1; delta > y1-len(seats); delta-- {
-		y := y1 - delta
-		if x1+delta > -1 {
-			if string(seats[y][x1+delta]) == "#" { // diagonal left
-				occupied++
-				break
-			} else if string(seats[y][x1+delta]) == "L" {
-				break
-			}
-		}
-	}
-	for delta := 1; delta < len(seats[0])-x1; delta++ {
-		x := x1 + delta
-		if string(seats[y1][x]) == "#" { // straight right
-			occupied++
-			break
-		} else if string(seats[y1][x]) == "L" {
-			break
-		}
-	}
-	for delta := 1; delta <= x1; delta++ {
-		x := x1 - delta
-		if string(seats[y1][x]) == "#" { // straight left
-			occupied++
-			break
-		} else if string(seats[y1][x]) == "L" {
-			break
-		}
-	}
-
 	if occupied >= 5 {
 		return "L"
 	}
