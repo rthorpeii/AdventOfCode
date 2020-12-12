@@ -92,33 +92,9 @@ func PartTwo(file string) int {
 		case "W":
 			waypointCoords.x -= value
 		case "L":
-			switch value {
-			case 90:
-				newY := waypointCoords.x
-				waypointCoords.x = -waypointCoords.y
-				waypointCoords.y = newY
-			case 180:
-				waypointCoords.x = -waypointCoords.x
-				waypointCoords.y = -waypointCoords.y
-			case 270:
-				newY := -waypointCoords.x
-				waypointCoords.x = waypointCoords.y
-				waypointCoords.y = newY
-			}
+			rotateWaypoint(&waypointCoords, 360-value)
 		case "R":
-			switch value {
-			case 90:
-				newY := -waypointCoords.x
-				waypointCoords.x = waypointCoords.y
-				waypointCoords.y = newY
-			case 180:
-				waypointCoords.x = -waypointCoords.x
-				waypointCoords.y = -waypointCoords.y
-			case 270:
-				newY := waypointCoords.x
-				waypointCoords.x = -waypointCoords.y
-				waypointCoords.y = newY
-			}
+			rotateWaypoint(&waypointCoords, value)
 		case "F":
 			for i := 0; i < value; i++ {
 				shipCoords.x += waypointCoords.x
@@ -128,4 +104,14 @@ func PartTwo(file string) int {
 	}
 
 	return Abs(shipCoords.x) + Abs(shipCoords.y)
+}
+
+// Rotates the ship clockwise
+func rotateWaypoint(coords *coord, degree int) {
+	for degree > 0 {
+		newY := -coords.x
+		coords.x = coords.y
+		coords.y = newY
+		degree -= 90
+	}
 }
