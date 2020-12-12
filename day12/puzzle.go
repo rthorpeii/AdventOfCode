@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/rthorpeii/AdventOfCode2020/helper"
 	"github.com/rthorpeii/AdventOfCode2020/input"
 )
 
@@ -64,15 +65,7 @@ func PartOne(file string) int {
 		}
 	}
 
-	return Abs(ship.x) + Abs(ship.y)
-}
-
-// Abs returns the absolute value of x.
-func Abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
+	return helper.AbsInt(ship.x) + helper.AbsInt(ship.y)
 }
 
 // PartTwo finds the manhattan distance of the ship after following the instructions passed in
@@ -104,7 +97,7 @@ func PartTwo(file string) int {
 		}
 	}
 
-	return Abs(ship.x) + Abs(ship.y)
+	return helper.AbsInt(ship.x) + helper.AbsInt(ship.y)
 }
 
 // Rotates the waypoint clockwise around the ship by a number of degrees
