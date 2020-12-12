@@ -5,6 +5,7 @@ package day11
 import (
 	"fmt"
 
+	"github.com/rthorpeii/AdventOfCode2020/helper"
 	"github.com/rthorpeii/AdventOfCode2020/input"
 )
 
@@ -13,6 +14,7 @@ var testFile string = "day11/testInput.txt"
 
 // SolvePuzzle prints the output produced by running the input and test files on both parts
 func SolvePuzzle() {
+	sdf
 	fmt.Printf("Part 1 - Test: %v \n", PartOne(testFile))
 	fmt.Printf("Part 1 - Actual: %v \n", PartOne(puzzleInputFile))
 	fmt.Printf("Part 2 - Test: %v \n", PartTwo(testFile))
@@ -23,165 +25,109 @@ type coords struct {
 	x, y int
 }
 
-// PartOne finds
+// PartOne finds how many empty seats there are after the layout stablizes
 func PartOne(file string) int {
 	input := input.Slice(file)
 
-	changed := true
-	empytSeats := 0
+	changed, emptySeats := true, 0
 	for changed {
-		empytSeats = 0
-		changed = false
-		nextInput := make([]string, len(input))
-		for y := 0; y < len(input); y++ {
-			for x := 0; x < len(input[y]); x++ {
-				pos := coords{x, y}
-				value := string(input[y][x])
-				switch value {
-				case "L":
-					nextInput[y] += emptyChange(&input, pos)
-				case "#":
-					nextInput[y] += occupiedChange(&input, pos)
-				case ".":
-					nextInput[y] += "."
-				}
-				if nextInput[y][x] != input[y][x] {
-					changed = true
-				}
-				if string(nextInput[y][x]) == "#" {
-					empytSeats++
-				}
+		changed, emptySeats = updateLayout(&input, false, 3)
+	}
+	return emptySeats
+}
+
+// PartTwo finds how many empty seats there are after the layout stablizes for a new set of rules
+func PartTwo(file string) int {
+	input := input.Slice(file)
+
+	changed, emptySeats := true, 0
+	for changed {
+		changed, emptySeats = updateLayout(&input, true, 4)
+	}
+	return emptySeats
+}
+
+// updateLayout applies the rules for people changing seats to the current layout,
+// and returns whether any seats have changed, and how many seats in the layout are empty
+func updateLayout(layout *[]string, sight bool, threshold int) (changed bool, emptySeats int) {
+	changed, emptySeats = false, 0
+	updatedLayout := make([]string, len(*layout))
+	for y, row := range *layout {
+		updatedRow := ""
+		for x := range row {
+			pos := coords{x, y}
+			currentValue := string(row[x])
+			var updatedValue string
+			switch currentValue {
+			case "L":
+				updatedValue = updateSeat(layout, pos, sight, 0)
+			case "#":
+				updatedValue = updateSeat(layout, pos, sight, threshold)
+			case ".":
+				updatedValue = "."
 			}
+			if updatedValue != currentValue {
+				changed = true
+			}
+			if updatedValue == "#" {
+				emptySeats++
+			}
+			updatedRow += updatedValue
 		}
-		input = nextInput
+		updatedLayout[y] = updatedRow
 	}
-	return empytSeats
+	*layout = updatedLayout
+	return changed, emptySeats
 }
 
-func validateCoords(seats *[]string, pos coords) bool {
-	if pos.y >= len((*seats)) || pos.y < 0 {
-		return false
+// updateSeat returns what value the seat at pos should have after updating the layout.
+// If sight is true, the function will base the rules off of the first seat within sight
+// in a given direction, other wise it will base the rules off of the seats immediately
+// adjacent to it. Returns an empty seat after the threshold number of occupied seats is encounterd.
+func updateSeat(layout *[]string, pos coords, sight bool, threshold int) string {
+	dist := 1
+	if sight {
+		dist = helper.MaxInt(len(*layout), len((*layout)[pos.y]))
 	}
-	return (pos.x > -1 && pos.x < len((*seats)[pos.y]))
-}
 
-func emptyChange(seats *[]string, pos coords) string {
+	visible := 0
 	for y := -1; y <= 1; y++ {
-		for x := -1; x <= +1; x++ {
-			target := coords{pos.x + x, pos.y + y}
-			if !validateCoords(seats, target) || (target == pos) {
-				continue
-			}
-			if string((*seats)[target.y][target.x]) == "#" {
+		for x := -1; x <= 1; x++ {
+			dir := coords{x, y}
+			visible += visiblyOccupied(layout, pos, dir, dist)
+			if visible > threshold {
 				return "L"
 			}
 		}
 	}
+
 	return "#"
 }
 
-func occupiedChange(seats *[]string, pos coords) string {
-	occupied := 0
-	for y := -1; y <= 1; y++ {
-		for x := -1; x <= +1; x++ {
-			target := coords{pos.x + x, pos.y + y}
-			if !validateCoords(seats, target) || (target == pos) {
-				continue
-			}
-			if string((*seats)[target.y][target.x]) == "#" {
-				occupied++
-			}
+// visiblyOccupied looks from pos in the direction specified for the first seat within dist
+// Returns 1 if that seat is occupied, 0 Otherwise.
+func visiblyOccupied(layout *[]string, pos coords, dir coords, dist int) int {
+	target := coords{pos.x, pos.y}
+	for i := 0; i < dist; i++ {
+		target.x += dir.x
+		target.y += dir.y
+		if !coordsValid(layout, target) || (target == pos) {
+			break
+		}
+		switch string((*layout)[target.y][target.x]) {
+		case "#":
+			return 1
+		case "L":
+			return 0
 		}
 	}
-	if occupied >= 4 {
-		return "L"
-	}
-	return "#"
+	return 0
 }
 
-// PartTwo finds
-func PartTwo(file string) int {
-	input := input.Slice(file)
-
-	changed := true
-	nextEmpty := 0
-	for changed {
-		nextEmpty = 0
-		changed = false
-		nextInput := make([]string, len(input))
-		for y := 0; y < len(input); y++ {
-			for x := 0; x < len(input[y]); x++ {
-				pos := coords{x, y}
-				value := string(input[y][x])
-				switch value {
-				case "L":
-					nextInput[y] += emptySightChange(&input, pos)
-				case "#":
-					nextInput[y] += occupiedSightChange(&input, pos)
-				case ".":
-					nextInput[y] += "."
-				}
-				if nextInput[y][x] != input[y][x] {
-					changed = true
-				}
-				if string(nextInput[y][x]) == "#" {
-					nextEmpty++
-				}
-			}
-		}
-		input = nextInput
+// coordsValid returns whether the pos is a valid set of coordinates within the layout
+func coordsValid(layout *[]string, pos coords) bool {
+	if pos.y >= len(*layout) || pos.y < 0 {
+		return false
 	}
-	return nextEmpty
-}
-
-func emptySightChange(seats *[]string, pos coords) string {
-	for y := -1; y <= 1; y++ {
-		for x := -1; x <= +1; x++ {
-			target := coords{pos.x, pos.y}
-		LineOfSight:
-			for true {
-				target.x += x
-				target.y += y
-				if !validateCoords(seats, target) || (target == pos) {
-					break
-				}
-				switch string((*seats)[target.y][target.x]) {
-				case "#":
-					return "L"
-				case "L":
-					break LineOfSight
-				}
-			}
-
-		}
-	}
-	return "#"
-}
-
-func occupiedSightChange(seats *[]string, pos coords) string {
-	occupied := 0
-	for y := -1; y <= 1; y++ {
-		for x := -1; x <= +1; x++ {
-			target := coords{pos.x, pos.y}
-		LineOfSight:
-			for true {
-				target.x += x
-				target.y += y
-				if !validateCoords(seats, target) || (target == pos) {
-					break
-				}
-				switch string((*seats)[target.y][target.x]) {
-				case "#":
-					occupied++
-					break LineOfSight
-				case "L":
-					break LineOfSight
-				}
-			}
-		}
-	}
-	if occupied >= 5 {
-		return "L"
-	}
-	return "#"
+	return (pos.x > -1 && pos.x < len((*layout)[pos.y]))
 }
