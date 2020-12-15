@@ -21,166 +21,96 @@ func SolvePuzzle() {
 	fmt.Printf("Part 2 - Actual: %v \n", PartTwo(puzzleInputFile))
 }
 
-// PartOne finds
+// PartOne finds the sum of the memory after running the inputs, while masking the value
 func PartOne(file string) int {
 	input := input.Slice(file)
-	memory := make(map[uint64]map[uint]bool)
+	memory := make(map[string]string)
 
 	var mask string
 	for _, line := range input {
 		split := strings.Split(line, " = ")
 		if split[0] == "mask" {
 			mask = split[1]
-			continue
-		}
-		// fmt.Println(split[0])
-		strAddress := split[0][4 : len(split[0])-1]
-		// fmt.Println(strAddress)
-		address, _ := strconv.ParseUint(strAddress, 10, 64)
-		base10Num, _ := strconv.ParseInt(split[1], 10, 64)
-		num := strconv.FormatInt(base10Num, 2)
-		setAddress(&memory, address, num, mask)
-	}
-
-	returnVal := 0
-
-	for _, val := range memory {
-		strVal := bitToString(val)
-		base10Val, _ := strconv.ParseInt(strVal, 2, 64)
-		returnVal += int(base10Val)
-	}
-	// fmt.Println(memory)
-	return returnVal
-}
-
-func bitToString(bitmap map[uint]bool) string {
-	var value string
-	for i := 35; i > -1; i-- {
-		if bitmap[uint(i)] {
-			value += "1"
 		} else {
-			value += "0"
+			address := split[0][4 : len(split[0])-1]
+			num := base10StringToBase2(split[1])
+			newValue := applyMask(mask, num, "X")
+			memory[address] = newValue
 		}
 	}
-	return value
+
+	return sumMemory(memory)
 }
 
-func padNum(num string) string {
-	for len(num) < 36 {
-		num = "0" + num
+// base10StringToBase2 converts a number from base 10 to base 2
+func base10StringToBase2(num string) string {
+	base10Num, _ := strconv.ParseInt(num, 10, 64)
+	base2Num := strconv.FormatInt(base10Num, 2)
+	for len(base2Num) < 36 {
+		base2Num = "0" + base2Num
 	}
-	return num
+	return base2Num
 }
 
-func setAddress(addresses *map[uint64]map[uint]bool, address uint64, num string, mask string) {
-	newValue := make(map[uint]bool)
-	num = padNum(num)
-	// fmt.Println(num)
-	for index, value := range num {
-		bit := uint((len(mask) - 1) - index)
-		if string(value) == "1" {
-			newValue[bit] = true
-		}
-	}
-	// fmt.Printf("%v: %v Before mask\n", address, newValue)
-	applyMask(mask, &newValue)
-	// fmt.Printf("%v: %v After mask\n", address, newValue)
-
-	(*addresses)[address] = newValue
-}
-
-func applyMask(mask string, num *map[uint]bool) {
+// applyMask overwrites the bits in num with the corresponding bit in the mask
+// bits that match the value of skip are skipped
+func applyMask(mask string, num string, skip string) string {
 	for index, value := range mask {
-		bit := uint((len(mask) - 1) - index)
-
-		if string(value) == "0" {
-			(*num)[bit] = false
-		} else if string(value) == "1" {
-			(*num)[bit] = true
-		}
-	}
-}
-
-// PartTwo finds
-func PartTwo(file string) int {
-	input := input.Slice(file)
-	memory := make(map[string]map[uint]bool)
-
-	var mask string
-	for _, line := range input {
-		split := strings.Split(line, " = ")
-		if split[0] == "mask" {
-			mask = split[1]
-			continue
-		}
-		// fmt.Println(split[0])
-		strAddress := split[0][4 : len(split[0])-1]
-		// fmt.Println(strAddress)
-		base10Address, _ := strconv.ParseInt(strAddress, 10, 64)
-		base2Address := strconv.FormatInt(base10Address, 2)
-		base2Address = padNum(base2Address)
-
-		base10Num, _ := strconv.ParseInt(split[1], 10, 64)
-		num := strconv.FormatInt(base10Num, 2)
-		setAddressPart2(&memory, base2Address, num, mask)
-	}
-
-	returnVal := 0
-
-	for _, val := range memory {
-		strVal := bitToString(val)
-		base10Val, _ := strconv.ParseInt(strVal, 2, 64)
-		returnVal += int(base10Val)
-	}
-	// fmt.Println(memory)
-	return returnVal
-}
-
-func setAddressPart2(addresses *map[string]map[uint]bool, address string, num string, mask string) {
-	newValue := make(map[uint]bool)
-	num = padNum(num)
-	// fmt.Println(num)
-	for index, value := range num {
-		bit := uint((len(num) - 1) - index)
-		if string(value) == "1" {
-			newValue[bit] = true
-		}
-	}
-	address = applyMaskString(mask, address)
-
-	possibleAddresses := findAddresses(address)
-	for _, newAddr := range possibleAddresses {
-		// fmt.Printf("Possible Addr: %v\n", newAddr)
-		(*addresses)[newAddr] = newValue
-	}
-}
-
-func applyMaskString(mask string, num string) string {
-	for index, value := range mask {
-		if string(value) != "0" {
+		if string(value) != skip {
 			num = num[:index] + string(value) + num[index+1:]
 		}
 	}
 	return num
 }
 
-func findAddresses(floating string) []string {
+// sumMemory sums the values within the memory addresses
+func sumMemory(memory map[string]string) int {
+	sum := 0
+	for _, val := range memory {
+		base10Val, _ := strconv.ParseInt(val, 2, 64)
+		sum += int(base10Val)
+	}
+	return sum
+}
+
+// PartTwo finds the sum of the memory after running the inputs, while masking the address
+func PartTwo(file string) int {
+	input := input.Slice(file)
+	memory := make(map[string]string)
+
+	var mask string
+	for _, line := range input {
+		split := strings.Split(line, " = ")
+		if split[0] == "mask" {
+			mask = split[1]
+		} else {
+			address := base10StringToBase2(split[0][4 : len(split[0])-1])
+			maskedAddress := applyMask(mask, address, "0")
+			value := base10StringToBase2(split[1])
+			for _, newAddr := range findAddresses(maskedAddress) {
+				memory[newAddr] = value
+			}
+		}
+	}
+
+	return sumMemory(memory)
+}
+
+// findAddresses takes a masked address and finds all possible addresses that can be
+// created from the masked address
+func findAddresses(maskedAddress string) []string {
 	var addresses []string
-	prefix := ""
-	for index, char := range floating {
+	var prefix string
+	for index, char := range maskedAddress {
 		if string(char) != "X" {
 			prefix += string(char)
 		} else {
-			subAddresses := findAddresses(floating[index+1:])
+			subAddresses := findAddresses(maskedAddress[index+1:])
 			for _, address := range subAddresses {
-				newAddress := prefix + "0" + address
-				addresses = append(addresses, newAddress)
-				newAddress = prefix + "1" + address
-				addresses = append(addresses, newAddress)
+				addresses = append(addresses, prefix+"0"+address, prefix+"1"+address)
 			}
 			return addresses
 		}
 	}
-	addresses = append(addresses, prefix)
-	return addresses
+	return append(addresses, prefix)
 }
