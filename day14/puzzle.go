@@ -75,16 +75,16 @@ func padNum(num string) string {
 func setAddress(addresses *map[uint64]map[uint]bool, address uint64, num string, mask string) {
 	newValue := make(map[uint]bool)
 	num = padNum(num)
-	fmt.Println(num)
+	// fmt.Println(num)
 	for index, value := range num {
 		bit := uint((len(mask) - 1) - index)
 		if string(value) == "1" {
 			newValue[bit] = true
 		}
 	}
-	fmt.Printf("%v: %v Before mask\n", address, newValue)
+	// fmt.Printf("%v: %v Before mask\n", address, newValue)
 	applyMask(mask, &newValue)
-	fmt.Printf("%v: %v After mask\n", address, newValue)
+	// fmt.Printf("%v: %v After mask\n", address, newValue)
 
 	(*addresses)[address] = newValue
 }
@@ -103,7 +103,84 @@ func applyMask(mask string, num *map[uint]bool) {
 
 // PartTwo finds
 func PartTwo(file string) int {
-	// rawInput := input.ReadInput(file string)
+	input := input.Slice(file)
+	memory := make(map[string]map[uint]bool)
 
-	return -1
+	var mask string
+	for _, line := range input {
+		split := strings.Split(line, " = ")
+		if split[0] == "mask" {
+			mask = split[1]
+			continue
+		}
+		// fmt.Println(split[0])
+		strAddress := split[0][4 : len(split[0])-1]
+		// fmt.Println(strAddress)
+		base10Address, _ := strconv.ParseInt(strAddress, 10, 64)
+		base2Address := strconv.FormatInt(base10Address, 2)
+		base2Address = padNum(base2Address)
+
+		base10Num, _ := strconv.ParseInt(split[1], 10, 64)
+		num := strconv.FormatInt(base10Num, 2)
+		setAddressPart2(&memory, base2Address, num, mask)
+	}
+
+	returnVal := 0
+
+	for _, val := range memory {
+		strVal := bitToString(val)
+		base10Val, _ := strconv.ParseInt(strVal, 2, 64)
+		returnVal += int(base10Val)
+	}
+	// fmt.Println(memory)
+	return returnVal
+}
+
+func setAddressPart2(addresses *map[string]map[uint]bool, address string, num string, mask string) {
+	newValue := make(map[uint]bool)
+	num = padNum(num)
+	// fmt.Println(num)
+	for index, value := range num {
+		bit := uint((len(num) - 1) - index)
+		if string(value) == "1" {
+			newValue[bit] = true
+		}
+	}
+	address = applyMaskString(mask, address)
+
+	possibleAddresses := findAddresses(address)
+	for _, newAddr := range possibleAddresses {
+		// fmt.Printf("Possible Addr: %v\n", newAddr)
+		(*addresses)[newAddr] = newValue
+	}
+}
+
+func applyMaskString(mask string, num string) string {
+	for index, value := range mask {
+		if string(value) != "0" {
+			num = num[:index] + string(value) + num[index+1:]
+		}
+	}
+	return num
+}
+
+func findAddresses(floating string) []string {
+	var addresses []string
+	prefix := ""
+	for index, char := range floating {
+		if string(char) != "X" {
+			prefix += string(char)
+		} else {
+			subAddresses := findAddresses(floating[index+1:])
+			for _, address := range subAddresses {
+				newAddress := prefix + "0" + address
+				addresses = append(addresses, newAddress)
+				newAddress = prefix + "1" + address
+				addresses = append(addresses, newAddress)
+			}
+			return addresses
+		}
+	}
+	addresses = append(addresses, prefix)
+	return addresses
 }
