@@ -21,46 +21,43 @@ func SolvePuzzle() {
 	fmt.Printf("Part 2 - Actual: %v \n", PartTwo(puzzleInputFile))
 }
 
-// PartOne finds
+// PartOne finds the number said on the 2020th turn
 func PartOne(file string) int {
-	rawInput := input.ReadInput(file)
-	starters := strings.Split(rawInput, ",")
+	return playGame(file, 2020)
+}
 
-	turn := 0
-	nums := make(map[int]int)
-	lastNum := 0
-	for _, value := range starters {
+// PartTwo finds the number said on the 30000000th turn
+func PartTwo(file string) int {
+	return playGame(file, 30000000)
+}
+
+// playGame runs the rules of the game for the specified number of
+// turns, starting with the numbers in the input file
+func playGame(file string, turns int) int {
+	starters := strings.Split(input.ReadInput(file), ",")
+
+	nums, lastNum := make(map[int]int), 0
+	for index, value := range starters {
 		num, _ := strconv.Atoi(value)
-		nums[num] = turn
+		nums[num] = index
 		lastNum = num
-		turn++
 	}
 
-	new := true
-	// fmt.Println(nums)
-	for turn < 30000000 {
-		// fmt.Println(lastNum, nums, turn)
-		nextNum := 0
+	turn, new := len(nums), true
+	for turn < turns {
 		if new {
 			nums[lastNum] = turn - 1
-			nextNum = 0
 			new = false
+			lastNum = 0
 		} else {
-			nextNum = turn - 1 - nums[lastNum]
+			nextNum := turn - 1 - nums[lastNum]
 			nums[lastNum] = turn - 1
-			_, ok := nums[nextNum]
-			new = !ok
+			_, exists := nums[nextNum]
+			new = !exists
+			lastNum = nextNum
 		}
-		lastNum = nextNum
 		turn++
 	}
 
 	return lastNum
-}
-
-// PartTwo finds
-func PartTwo(file string) int {
-	// rawInput := input.ReadInput(file string)
-
-	return -1
 }
