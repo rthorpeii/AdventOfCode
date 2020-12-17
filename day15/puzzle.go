@@ -15,9 +15,9 @@ var testFile string = "day15/testInput.txt"
 
 // SolvePuzzle prints the output produced by running the input and test files on both parts
 func SolvePuzzle() {
-	fmt.Printf("Part 1 - Test: %v \n", PartOne(testFile))
-	fmt.Printf("Part 1 - Actual: %v \n", PartOne(puzzleInputFile))
-	fmt.Printf("Part 2 - Test: %v \n", PartTwo(testFile))
+	// fmt.Printf("Part 1 - Test: %v \n", PartOne(testFile))
+	// fmt.Printf("Part 1 - Actual: %v \n", PartOne(puzzleInputFile))
+	// fmt.Printf("Part 2 - Test: %v \n", PartTwo(testFile))
 	fmt.Printf("Part 2 - Actual: %v \n", PartTwo(puzzleInputFile))
 }
 
@@ -43,18 +43,19 @@ func playGame(file string, turns int) int {
 		lastNum = num
 	}
 
-	turn, new := len(nums), true
-	for turn < turns {
-		if new {
-			nums[lastNum] = turn - 1
-			new = false
-			lastNum = 0
-		} else {
-			nextNum := turn - 1 - nums[lastNum]
-			nums[lastNum] = turn - 1
+	target := turns - 1
+	turn, seenBefore := len(nums)-1, true
+	for turn < target {
+		if seenBefore {
+			nextNum := turn - nums[lastNum]
+			nums[lastNum] = turn
 			_, exists := nums[nextNum]
-			new = !exists
+			seenBefore = exists
 			lastNum = nextNum
+		} else {
+			nums[lastNum] = turn
+			seenBefore = true
+			lastNum = 0
 		}
 		turn++
 	}
