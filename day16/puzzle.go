@@ -29,29 +29,10 @@ type rulePair struct {
 
 // PartOne finds
 func PartOne(file string) int {
-	rawInput := input.ReadInput(file)
-	parts := strings.Split(rawInput, "\n\n")
-	rawRules := parts[0]
-	// myticket := parts[1]
+	parts := strings.Split(input.ReadInput(file), "\n\n")
 	nearbyTickets := strings.Split(parts[2], "\n")
 
-	rules := make(map[string][]rulePair)
-	for _, line := range strings.Split(rawRules, "\n") {
-		ruleParts := strings.Split(line, ": ")
-		name := ruleParts[0]
-		ruleVals := strings.Split(ruleParts[1], " or ")
-
-		var pairs []rulePair
-		for _, rule := range ruleVals {
-			nums := strings.Split(rule, "-")
-			low, _ := strconv.Atoi(nums[0])
-			high, _ := strconv.Atoi(nums[1])
-			currentPair := rulePair{low, high}
-			pairs = append(pairs, currentPair)
-		}
-
-		rules[name] = pairs
-	}
+	rules := parseRules(parts[0])
 
 	errorRate := 0
 	rulePos := make(map[int]map[string]bool)
@@ -108,29 +89,10 @@ func validateTicket(rules *map[string][]rulePair, ticket string, rulePos *map[in
 
 // PartTwo finds
 func PartTwo(file string) int {
-	rawInput := input.ReadInput(file)
-	parts := strings.Split(rawInput, "\n\n")
-	rawRules := parts[0]
+	parts := strings.Split(input.ReadInput(file), "\n\n")
 	myTicket := strings.Split(parts[1], "\n")
 	nearbyTickets := strings.Split(parts[2], "\n")
-
-	rules := make(map[string][]rulePair)
-	for _, line := range strings.Split(rawRules, "\n") {
-		ruleParts := strings.Split(line, ": ")
-		name := ruleParts[0]
-		ruleVals := strings.Split(ruleParts[1], " or ")
-
-		var pairs []rulePair
-		for _, rule := range ruleVals {
-			nums := strings.Split(rule, "-")
-			low, _ := strconv.Atoi(nums[0])
-			high, _ := strconv.Atoi(nums[1])
-			currentPair := rulePair{low, high}
-			pairs = append(pairs, currentPair)
-		}
-
-		rules[name] = pairs
-	}
+	rules := parseRules(parts[0])
 
 	var validTickets []string
 	rulePos := make(map[int]map[string]bool)
@@ -144,13 +106,13 @@ func PartTwo(file string) int {
 	myticketFields := strings.Split(myTicket[1], ",")
 	finalPos := make(map[string]int)
 	for len(finalPos) < len(myticketFields) {
-	OuterLoop:
+	UpdateRules:
 		for index, rules := range rulePos {
 			for name := range rules {
 				if len(rules) == 1 {
 					finalPos[name] = index
 					delete(rulePos, index)
-					break OuterLoop
+					break UpdateRules
 				}
 				_, valid := finalPos[name]
 				if valid {
@@ -162,7 +124,6 @@ func PartTwo(file string) int {
 		}
 	}
 
-	// fmt.Println(finalPos)
 	answer := 1
 	for name, index := range finalPos {
 		matches, _ := regexp.MatchString(`^departure`, name)
@@ -173,4 +134,24 @@ func PartTwo(file string) int {
 	}
 
 	return answer
+}
+
+func parseRules(rawRules string) map[string][]rulePair {
+	rules := make(map[string][]rulePair)
+	for _, line := range strings.Split(rawRules, "\n") {
+		ruleParts := strings.Split(line, ": ")
+		name := ruleParts[0]
+		ruleVals := strings.Split(ruleParts[1], " or ")
+
+		var pairs []rulePair
+		for _, rule := range ruleVals {
+			nums := strings.Split(rule, "-")
+			low, _ := strconv.Atoi(nums[0])
+			high, _ := strconv.Atoi(nums[1])
+			pairs = append(pairs, rulePair{low, high})
+		}
+
+		rules[name] = pairs
+	}
+	return rules
 }
