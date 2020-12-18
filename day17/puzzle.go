@@ -20,123 +20,198 @@ func SolvePuzzle() {
 }
 
 type cubeMap struct {
-	cubes  map[int]map[int]map[int]bool
-	height int
-	width  int
-	growth int
+	cubes  map[int]cubeMap
+	values map[int]bool
+	size   int
+	depth  int
 }
 
-func updateCube(cubes *map[int]map[int]map[int]bool, x int, y int, z int, value bool) {
-	_, zExists := (*cubes)[z]
-	if !zExists {
-		(*cubes)[z] = make(map[int]map[int]bool)
-		(*cubes)[z][y] = make(map[int]bool)
+func (dimension *cubeMap) cycleCube(coords []int, origin *cubeMap, growth int) cubeMap {
+	nextCubes := newCubeMap(dimension.size, dimension.depth)
+	if dimension.depth == 0 {
+		newValues := make(map[int]bool)
+
+		for coord := -growth; coord <= dimension.size+growth; coord++ {
+			currentCoords := append(coords, coord)
+			value := dimension.values[coord]
+			nextValue := origin.findNextState(currentCoords, value)
+			newValues[coord] = nextValue
+		}
+
+		nextCubes.values = newValues
 	} else {
-		_, yExists := (*cubes)[z][y]
-		if !yExists {
-			(*cubes)[z][y] = make(map[int]bool)
+		for coord := -growth; coord <= dimension.size+growth; coord++ {
+			_, exists := dimension.cubes[coord]
+			if !exists {
+				dimension.cubes[coord] = newCubeMap(dimension.size, dimension.depth-1)
+			}
+
+			nextDimension := dimension.cubes[coord]
+			currentCoords := append(coords, coord)
+			nextCubes.cubes[coord] = (&nextDimension).cycleCube(currentCoords, origin, growth)
 		}
 	}
-	(*cubes)[z][y][x] = value
+
+	return nextCubes
+}
+
+func (dimension cubeMap) findNextState(coords []int, value bool) bool {
+	neighbors := dimension.countNeighbors(coords, false)
+	if neighbors == 3 {
+		return true
+	}
+	if neighbors == 2 && value {
+		return true
+	}
+	return false
+
+}
+
+func (dimension *cubeMap) countNeighbors(coords []int, changed bool) int {
+	if len(coords) == 1 {
+		neighborCount := 0
+		for delta := -1; delta <= 1; delta++ {
+			coord := coords[0] + delta
+
+			if dimension.values[coord] && (changed || delta != 0) {
+				neighborCount++
+			}
+
+		}
+		return neighborCount
+	}
+	neighborCount := 0
+	for delta := -1; delta <= 1; delta++ {
+		coord := coords[0] + delta
+
+		_, exists := (*dimension).cubes[coord]
+		if !exists {
+			newMap := newCubeMap(dimension.size, dimension.depth-1)
+			(*dimension).cubes[coord] = newMap
+		}
+
+		nextChanged := changed || (delta != 0)
+
+		nextDim := (*dimension).cubes[coord]
+		neighborCount += nextDim.countNeighbors(coords[1:], nextChanged)
+	}
+
+	return neighborCount
+}
+
+func (dimension cubeMap) getValue(coords []int) bool {
+	if len(coords) == 1 {
+		return dimension.values[coords[0]]
+	}
+	return dimension.cubes[coords[0]].getValue(coords[1:])
+}
+
+func (dimension *cubeMap) setValue(coords []int, value bool) {
+	if len(coords) == 1 {
+		(*dimension).values[coords[0]] = value
+		return
+	}
+	_, exists := (*dimension).cubes[coords[0]]
+	if !exists {
+		newMap := newCubeMap(dimension.size, dimension.depth-1)
+		(*dimension).cubes[coords[0]] = newMap
+	}
+	subMap := (*dimension).cubes[coords[0]]
+	subMap.setValue(coords[1:], value)
+}
+
+func newCubeMap(size int, depth int) cubeMap {
+	return cubeMap{size: size, values: make(map[int]bool), cubes: make(map[int]cubeMap), depth: depth}
+}
+
+func (dimension cubeMap) countActive() int {
+	count := 0
+
+	if len(dimension.values) > 0 {
+		for _, value := range dimension.values {
+			if value {
+				count++
+			}
+		}
+	} else {
+		for _, value := range dimension.cubes {
+			count += value.countActive()
+		}
+	}
+	return count
+}
+
+func (dimension *cubeMap) printMap(top bool, growth int) {
+	if dimension.depth == 0 {
+		printString := ""
+		if dimension.size == 0 {
+			fmt.Println("--------size is 0 -----------", dimension)
+		}
+		for coord := -growth; coord <= dimension.size+growth; coord++ {
+			if dimension.values[coord] {
+				printString += "#"
+			} else {
+				printString += "."
+			}
+		}
+		fmt.Println(printString)
+		return
+	}
+
+	for coord := -growth; coord <= dimension.size+growth; coord++ {
+		if top {
+			fmt.Printf("Depth:%v \n", coord)
+		}
+		_, exists := dimension.cubes[coord]
+		if !exists {
+			dimension.cubes[coord] = newCubeMap(dimension.size, dimension.depth-1)
+		}
+		nextDim := dimension.cubes[coord]
+		nextDim.printMap(false, growth)
+	}
+	return
 }
 
 // PartOne finds
 func PartOne(file string) int {
 	rawInput := input.Slice(file)
-	z := make(map[int]map[int]map[int]bool)
+	dimensions := newCubeMap(len(rawInput), 2)
 
 	for y, line := range rawInput {
 		for x, value := range line {
 			if string(value) == "#" {
-				updateCube(&z, x, y, 0, true)
+				coords := []int{0, y, x}
+				dimensions.setValue(coords, true)
 			}
 		}
 	}
 
-	mapping := cubeMap{z, len(rawInput), len(rawInput[0]), 1}
 	for i := 0; i < 6; i++ {
-		// printMap(&mapping)
-		changeState(&mapping)
+		var coords []int
+		dimensions = dimensions.cycleCube(coords, &dimensions, i+1)
 	}
 
-	return countActive(&mapping)
-}
-
-func printMap(cube *cubeMap) {
-	for z := -(*cube).growth; z <= (*cube).growth; z++ {
-		fmt.Printf("z: %v\n", z)
-		for y := -(*cube).growth; y <= (*cube).height+(*cube).growth; y++ {
-			line := ""
-			for x := -(*cube).growth; x <= (*cube).width+(*cube).growth; x++ {
-				if (*cube).cubes[z][y][x] {
-					line += "#"
-				} else {
-					line += "."
-				}
-			}
-			fmt.Println(line)
-		}
-	}
-}
-
-func countActive(cubes *cubeMap) int {
-	count := 0
-	for _, y := range (*cubes).cubes {
-		for _, x := range y {
-			for _, active := range x {
-				if active {
-					count++
-				}
-			}
-		}
-	}
-	return count
-}
-func changeState(cube *cubeMap) {
-	newStates := make(map[int]map[int]map[int]bool)
-	for z := -(*cube).growth; z <= (*cube).growth; z++ {
-		for y := -(*cube).growth; y <= (*cube).height+(*cube).growth; y++ {
-			for x := -(*cube).growth; x <= (*cube).width+(*cube).growth; x++ {
-				value := checkChange(&(*cube).cubes, x, y, z)
-				updateCube(&newStates, x, y, z, value)
-			}
-		}
-	}
-
-	(*cube).cubes = newStates
-	(*cube).growth++
-}
-
-func checkChange(cubes *map[int]map[int]map[int]bool, x int, y int, z int) bool {
-	surrounding := 0
-	for dz := -1; dz <= 1; dz++ {
-		for dy := -1; dy <= 1; dy++ {
-			for dx := -1; dx <= 1; dx++ {
-				if dx == 0 && dy == 0 && dz == 0 {
-					continue
-				}
-				if (*cubes)[z+dz][y+dy][x+dx] {
-					surrounding++
-				}
-			}
-		}
-	}
-
-	if (*cubes)[z][y][x] {
-		// fmt.Println((*cubes)[z][y][x], x, y, z, surrounding)
-	}
-
-	if surrounding == 3 {
-		return true
-	} else if (*cubes)[z][y][x] && surrounding == 2 {
-		return true
-	}
-	return false
+	return dimensions.countActive()
 }
 
 // PartTwo finds
 func PartTwo(file string) int {
-	// rawInput := input.ReadInput(file string)
+	rawInput := input.Slice(file)
+	dimensions := newCubeMap(len(rawInput), 3)
 
-	return -1
+	for y, line := range rawInput {
+		for x, value := range line {
+			if string(value) == "#" {
+				coords := []int{0, 0, y, x}
+				dimensions.setValue(coords, true)
+			}
+		}
+	}
+
+	for i := 0; i < 6; i++ {
+		var coords []int
+		dimensions = dimensions.cycleCube(coords, &dimensions, i+1)
+	}
+
+	return dimensions.countActive()
 }
