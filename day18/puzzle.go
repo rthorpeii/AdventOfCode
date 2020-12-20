@@ -28,6 +28,7 @@ func parseLine(line string) int {
 
 	depthValue := make(map[int]int)
 	operandDepth := make(map[int]string)
+	multDepth := make(map[int]bool)
 	depthValue[0] = 0
 	depth := 0
 	index := 0
@@ -39,11 +40,23 @@ func parseLine(line string) int {
 		prevValue := depthValue[depth]
 		// fmt.Println("prevValue: ", prevValue)
 
+		if index == len(split)-1 && multDepth[depth-1] && len(split[index]) == 1 {
+			split[index] = split[index] + ")"
+			multDepth[depth-1] = false
+			continue
+		}
+
 		if value == "(" {
 			depth++
 			depthValue[depth] = 0
 			operandDepth[depth] = ""
+			multDepth[depth] = false
 		} else if value == ")" {
+			if multDepth[depth-1] {
+				split[index] = split[index] + ")"
+				multDepth[depth-1] = false
+				continue
+			}
 			depth--
 			if operandDepth[depth] != "" {
 				depthValue[depth] = runOp(operandDepth[depth], depthValue[depth], depthValue[depth+1])
@@ -60,13 +73,32 @@ func parseLine(line string) int {
 					depthValue[depth] = runOp(op, prevValue, num)
 				}
 			} else {
-				operandDepth[depth] = value
+				if value == "*" {
+					if multDepth[depth-1] {
+						split[index] = ")" + split[index]
+						multDepth[depth-1] = false
+						continue
+					} else {
+						operandDepth[depth] = value
+						split[index+1] = "(" + split[index+1]
+						multDepth[depth] = true
+					}
+				} else {
+					operandDepth[depth] = value
+				}
 			}
 		}
 		if len(split[index]) > 1 {
 			split[index] = split[index][1:]
 			continue
 		}
+
+		if index == len(split)-1 && multDepth[depth-1] {
+			split[index] = ")"
+			multDepth[depth-1] = false
+			continue
+		}
+
 		index++
 	}
 	// fmt.Println(depthValue)
