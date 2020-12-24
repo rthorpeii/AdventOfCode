@@ -19,36 +19,41 @@ func SolvePuzzle() {
 	fmt.Printf("Part 2 - Actual: %v \n", PartTwo(puzzleInputFile))
 }
 
-// Coord is a coordinate
-type Coord struct {
+// Tile is tile at a specific (x,y) coordinate
+type Tile struct {
 	x int
 	y int
 }
 
-func parseDirection(directions string) []string {
-	var finalDirections []string
+func generateStart(file string) *map[Tile]bool {
+	// false is white
+	tiles := make(map[Tile]bool)
 
-	for i := 0; i < len(directions); i++ {
-		char := directions[i]
-		switch char {
-		case 'e':
-			finalDirections = append(finalDirections, "e")
-		case 'w':
-			finalDirections = append(finalDirections, "w")
-		case 's':
-			finalDirections = append(finalDirections, directions[i:i+2])
-			i++
-		case 'n':
-			finalDirections = append(finalDirections, directions[i:i+2])
-			i++
-		}
+	for _, line := range input.Slice(file) {
+		directions := parseDirection(line)
+		coord := followDirections(directions)
+		tiles[coord] = !tiles[coord]
 	}
-	return finalDirections
+	return &tiles
 }
 
-func followDirections(directions *[]string) Coord {
-	coord := Coord{}
+func parseDirection(directions string) *[]string {
+	var finalDirections []string
+	index := 0
+	for index < len(directions) {
+		dir := string(directions[index])
+		if dir == "s" || dir == "n" {
+			index++
+			dir += string(directions[index])
+		}
+		finalDirections = append(finalDirections, dir)
+		index++
+	}
+	return &finalDirections
+}
 
+func followDirections(directions *[]string) Tile {
+	coord := Tile{}
 	for _, dir := range *directions {
 		switch dir {
 		case "e":
@@ -72,80 +77,62 @@ func followDirections(directions *[]string) Coord {
 	return coord
 }
 
-// PartOne finds
-func PartOne(file string) int {
-	rawInput := input.Slice(file)
-
-	// false is white
-	orientations := make(map[Coord]bool)
-
-	for _, line := range rawInput {
-		directions := parseDirection(line)
-		coord := followDirections(&directions)
-		orientations[coord] = !orientations[coord]
-	}
-
+func countBlackTiles(tiles *map[Tile]bool) int {
 	count := 0
-	for _, value := range orientations {
+	for _, value := range *tiles {
 		if value {
 			count++
 		}
 	}
-
 	return count
+}
+
+// PartOne finds
+func PartOne(file string) int {
+	tiles := generateStart(file)
+	return countBlackTiles(tiles)
 }
 
 // PartTwo finds
 func PartTwo(file string) int {
-	rawInput := input.Slice(file)
-
-	// false is white
-	orientations := make(map[Coord]bool)
-
-	for _, line := range rawInput {
-		directions := parseDirection(line)
-		coord := followDirections(&directions)
-		orientations[coord] = !orientations[coord]
-	}
-
+	tiles := generateStart(file)
 	for day := 0; day < 100; day++ {
-		orientations = *flipTiles(&orientations)
+		flipTiles(tiles)
 	}
 
-	count := 0
-	for _, value := range orientations {
-		if value {
-			count++
-		}
-	}
-	return count
+	return countBlackTiles(tiles)
 }
 
-func flipTiles(tiles *map[Coord]bool) *map[Coord]bool {
-	newTiles := make(map[Coord]bool)
+func flipTiles(tiles *map[Tile]bool) {
+	newTiles := make(map[Tile]bool)
 	for coord, value := range *tiles {
 		if value {
 			adjacent := coord.adjacent()
-			adjacentBlackCount := adjacentBlack(tiles, &adjacent)
-			if adjacentBlackCount == 1 || adjacentBlackCount == 2 {
+			adjacentBlack := countAdjacentBlack(tiles, &adjacent)
+			if adjacentBlack == 1 || adjacentBlack == 2 {
 				newTiles[coord] = true
 			}
 
 			for _, adjacentCoord := range adjacent {
-				if !(*tiles)[adjacentCoord] {
-					adjacentToWhite := adjacentCoord.adjacent()
-					numBlackNextTowhite := adjacentBlack(tiles, &adjacentToWhite)
-					if numBlackNextTowhite == 2 {
-						newTiles[adjacentCoord] = true
-					}
-				}
+				adjacentCoord.setNextState(tiles, &newTiles)
 			}
 		}
 	}
-	return &newTiles
+	*tiles = newTiles
 }
 
-func adjacentBlack(tiles *map[Coord]bool, adjacentTiles *[]Coord) int {
+func (tile *Tile) adjacent() []Tile {
+	adjacent := make([]Tile, 6)
+	adjacent[0] = Tile{tile.x + 1, tile.y + 1}
+	adjacent[1] = Tile{tile.x + 2, tile.y}
+	adjacent[2] = Tile{tile.x + 1, tile.y - 1}
+	adjacent[3] = Tile{tile.x - 1, tile.y - 1}
+	adjacent[4] = Tile{tile.x - 2, tile.y}
+	adjacent[5] = Tile{tile.x - 1, tile.y + 1}
+	return adjacent
+}
+
+func countAdjacentBlack(tiles *map[Tile]bool, adjacentTiles *[]Tile) int {
 	count := 0
 	for _, coord := range *adjacentTiles {
 		if (*tiles)[coord] {
@@ -155,13 +142,11 @@ func adjacentBlack(tiles *map[Coord]bool, adjacentTiles *[]Coord) int {
 	return count
 }
 
-func (coord *Coord) adjacent() []Coord {
-	adjacent := make([]Coord, 6)
-	adjacent[0] = Coord{coord.x + 1, coord.y + 1}
-	adjacent[1] = Coord{coord.x + 2, coord.y}
-	adjacent[2] = Coord{coord.x + 1, coord.y - 1}
-	adjacent[3] = Coord{coord.x - 1, coord.y - 1}
-	adjacent[4] = Coord{coord.x - 2, coord.y}
-	adjacent[5] = Coord{coord.x - 1, coord.y + 1}
-	return adjacent
+func (tile Tile) setNextState(currentTiles *map[Tile]bool, newTiles *map[Tile]bool) {
+	if !(*currentTiles)[tile] {
+		adjacent := tile.adjacent()
+		if countAdjacentBlack(currentTiles, &adjacent) == 2 {
+			(*newTiles)[tile] = true
+		}
+	}
 }
