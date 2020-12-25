@@ -42,6 +42,4 @@ func transform(loopSize int, subject int) int {
 func SolvePuzzle() {
 	fmt.Printf("Part 1 - Test: %v \n", PartOne(testFile))
 	fmt.Printf("Part 1 - Actual: %v \n", PartOne(puzzleInputFile))
-	fmt.Printf("Part 2 - Test: %v \n", PartTwo(testFile))
-	fmt.Printf("Part 2 - Actual: %v \n", PartTwo(puzzleInputFile))
 }
