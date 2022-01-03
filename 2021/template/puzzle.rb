@@ -1,30 +1,18 @@
+# Solutions for Day XX of Advent of Code
+# https://adventofcode.com/2021/day/XX
 require "../input.rb"
 
 puzzleInputFile = "input.txt"
 testInputFile = "testInput.txt"
 
+#
 def partOne (inputFile) 
-    input = parseAsIntArray(inputFile)
-    
-    counter = 0
-    input.each_cons(2) do |a,b|
-        if b > a
-            counter += 1
-        end 
-    end
-    return counter
+    return -1
 end
 
+#
 def partTwo(inputFile)
-    input = parseAsIntArray(inputFile)
-    
-    counter = 0
-    input.each_cons(4) do |a, b, c, d|
-        if b + c + d > a + b + c
-            counter += 1
-        end 
-    end
-    return counter
+    return -1
 end
 
 puts "Part 1 - Test: " + partOne(testInputFile).to_s

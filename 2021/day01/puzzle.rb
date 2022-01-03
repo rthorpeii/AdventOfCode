@@ -1,8 +1,11 @@
+# Solutions for Day 1 of Advent of Code
+# https://adventofcode.com/2021/day/1
 require "../input.rb"
 
 puzzleInputFile = "input.txt"
 testInputFile = "testInput.txt"
 
+# Counts the number of input lines that are larger than the previous input line
 def partOne (inputFile) 
     input = parseAsIntArray(inputFile)
     
@@ -15,6 +18,8 @@ def partOne (inputFile)
     return counter
 end
 
+# Counts the number of consecutive chunks of 3 input lines that have a higher sum than that
+# of the previous chunk of 3 consecutive input lines.
 def partTwo(inputFile)
     input = parseAsIntArray(inputFile)
     
